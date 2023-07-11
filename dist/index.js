@@ -58,7 +58,7 @@ function run() {
             const octokit = github.getOctokit(githubToken);
             const payload = github.context.payload;
             if (!payload || !payload.ref) {
-                throw new Error('Invalid payload. Could not find the branch information.');
+                new Error('Invalid payload. Could not find the branch information.');
             }
             const branchName = payload.ref.replace('refs/heads/', '');
             core.info(`Base branch: ${branchName}`);
