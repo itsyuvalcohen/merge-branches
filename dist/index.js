@@ -52,6 +52,9 @@ function run() {
             const createPullRequest = core.getBooleanInput('create_pull_request', {
                 required: true
             });
+            const addPRReviewer = core.getBooleanInput('add_pr_reviewer', {
+                required: true
+            });
             const octokit = github.getOctokit(githubToken);
             const payload = github.context.payload;
             if (!payload || !payload.ref) {
@@ -61,7 +64,7 @@ function run() {
             core.info(`Base branch: ${branchName}`);
             core.info(`Target branch: ${targetBranch}`);
             core.info(`Attempting to merge ${branchName} into ${targetBranch}`);
-            yield mergeBranch(octokit, targetBranch, branchName, commitMessage, createPullRequest);
+            yield mergeBranch(octokit, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer);
             core.info(`Merged branch ${branchName} into ${targetBranch}`);
         }
         catch (error) {
@@ -69,7 +72,7 @@ function run() {
         }
     });
 }
-function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullRequest) {
+function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullRequest, addPRReviewer) {
     return __awaiter(this, void 0, void 0, function* () {
         const owner = github.context.repo.owner;
         const repo = github.context.repo.repo;
@@ -96,12 +99,14 @@ function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullR
                     body: 'Automatic merge conflict, please resolve manually.'
                 });
                 core.info(`Pull request created: ${pullRequest.data.html_url}`);
-                octokit.rest.pulls.requestReviewers({
-                    owner,
-                    repo,
-                    pull_number: pullRequest.data.number,
-                    reviewers: [github.context.actor]
-                });
+                if (addPRReviewer) {
+                    octokit.rest.pulls.requestReviewers({
+                        owner,
+                        repo,
+                        pull_number: pullRequest.data.number,
+                        reviewers: [github.context.actor]
+                    });
+                }
             }
             else {
                 throw error;

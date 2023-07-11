@@ -15,6 +15,10 @@ inputs:
     required: true
     description: 'Create a pull request if there are conflicts'
     default: 'true'
+  add_pr_reviewer:
+    required: true
+    description: 'Add the commit owner as a reviewer on the pull request'
+    default: 'true'
 runs:
   using: 'node16'
   main: 'dist/index.js'

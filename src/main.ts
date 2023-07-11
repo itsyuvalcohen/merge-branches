@@ -16,6 +16,9 @@ async function run(): Promise<void> {
         required: true
       }
     )
+    const addPRReviewer: boolean = core.getBooleanInput('add_pr_reviewer', {
+      required: true
+    })
 
     const octokit: InstanceType<typeof GitHub> = github.getOctokit(githubToken)
 
@@ -35,7 +38,8 @@ async function run(): Promise<void> {
       targetBranch,
       branchName,
       commitMessage,
-      createPullRequest
+      createPullRequest,
+      addPRReviewer
     )
 
     core.info(`Merged branch ${branchName} into ${targetBranch}`)
@@ -49,7 +53,8 @@ async function mergeBranch(
   baseBranch: string,
   branchName: string,
   commitMessage: string,
-  createPullRequest: boolean
+  createPullRequest: boolean,
+  addPRReviewer: boolean
 ): Promise<void> {
   const owner: string = github.context.repo.owner
   const repo: string = github.context.repo.repo
@@ -76,12 +81,14 @@ async function mergeBranch(
         body: 'Automatic merge conflict, please resolve manually.'
       })
       core.info(`Pull request created: ${pullRequest.data.html_url}`)
-      octokit.rest.pulls.requestReviewers({
-        owner,
-        repo,
-        pull_number: pullRequest.data.number,
-        reviewers: [github.context.actor]
-      })
+      if (addPRReviewer) {
+        octokit.rest.pulls.requestReviewers({
+          owner,
+          repo,
+          pull_number: pullRequest.data.number,
+          reviewers: [github.context.actor]
+        })
+      }
     } else {
       throw error
     }
