@@ -86,6 +86,7 @@ function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullR
         catch (error) {
             // If a 409 conflict error occurs, create a pull request instead
             if (error.status === 409 && createPullRequest) {
+                core.info('Automatic merge conflict, creating a pull request.');
                 const pullRequest = yield octokit.rest.pulls.create({
                     owner,
                     repo,
@@ -95,6 +96,12 @@ function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullR
                     body: 'Automatic merge conflict, please resolve manually.'
                 });
                 core.info(`Pull request created: ${pullRequest.data.html_url}`);
+                octokit.rest.pulls.requestReviewers({
+                    owner,
+                    repo,
+                    pull_number: pullRequest.data.number,
+                    reviewers: [github.context.actor]
+                });
             }
             else {
                 throw error;
