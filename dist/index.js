@@ -44,7 +44,9 @@ const github = __importStar(__nccwpck_require__(5438));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const targetBranch = core.getInput('target_branch', { required: true });
+            const targetBranch = core.getInput('target_branch', {
+                required: true
+            });
             const commitMessage = core.getInput('message', { required: true });
             const githubToken = core.getInput('github_token', { required: true });
             const octokit = github.getOctokit(githubToken);
@@ -54,7 +56,7 @@ function run() {
             }
             const branchName = payload.ref.replace('refs/heads/', '');
             yield mergeBranch(octokit, targetBranch, branchName, commitMessage);
-            core.setOutput('message', `Merged branch ${branchName} into ${targetBranch}`);
+            core.info(`Merged branch ${branchName} into ${targetBranch}`);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -63,19 +65,35 @@ function run() {
 }
 function mergeBranch(octokit, baseBranch, branchName, commitMessage) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield octokit.rest.git.createRef({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            ref: `refs/heads/${baseBranch}`,
-            sha: github.context.sha
-        });
-        yield octokit.rest.repos.merge({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            base: baseBranch,
-            head: branchName,
-            commit_message: commitMessage
-        });
+        const owner = github.context.repo.owner;
+        const repo = github.context.repo.repo;
+        try {
+            // Attempt to perform the merge operation
+            yield octokit.rest.repos.merge({
+                owner,
+                repo,
+                base: baseBranch,
+                head: branchName,
+                commit_message: commitMessage
+            });
+        }
+        catch (error) {
+            // If a 409 conflict error occurs, create a pull request instead
+            if (error.status === 409) {
+                const pullRequest = yield octokit.rest.pulls.create({
+                    owner,
+                    repo,
+                    title: `Merge ${branchName} into ${baseBranch}`,
+                    head: branchName,
+                    base: baseBranch,
+                    body: 'Automatic merge conflict, please resolve manually.'
+                });
+                core.info(`Pull request created: ${pullRequest.data.html_url}`);
+            }
+            else {
+                throw error;
+            }
+        }
     });
 }
 run();
