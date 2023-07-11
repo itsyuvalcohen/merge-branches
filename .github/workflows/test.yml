@@ -22,5 +22,5 @@ jobs:
       - uses: ./
         with:
           target_branch: develop
-          message: test
+          message: Merge main to develop
           github_token: ${{ secrets.TOKEN }}
