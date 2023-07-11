@@ -1,11 +1,16 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'merge-branches'
+description: 'Automatically merge branches'
+author: 'Yuval Cohen'
 inputs:
-  milliseconds: # change this
+  target_branch:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'The target branch'
+  message:
+    required: true
+    description: 'The merge commit message'
+  github_token:
+    required: true
+    description: 'Github token'
 runs:
   using: 'node16'
   main: 'dist/index.js'
