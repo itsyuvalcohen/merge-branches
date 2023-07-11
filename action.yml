@@ -11,6 +11,10 @@ inputs:
   github_token:
     required: true
     description: 'Github token'
+  create_pull_request:
+    required: true
+    description: 'Create a pull request if there are conflicts'
+    default: 'true'
 runs:
   using: 'node16'
   main: 'dist/index.js'

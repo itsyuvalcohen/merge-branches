@@ -49,13 +49,19 @@ function run() {
             });
             const commitMessage = core.getInput('message', { required: true });
             const githubToken = core.getInput('github_token', { required: true });
+            const createPullRequest = core.getBooleanInput('create_pull_request', {
+                required: true
+            });
             const octokit = github.getOctokit(githubToken);
             const payload = github.context.payload;
             if (!payload || !payload.ref) {
                 throw new Error('Invalid payload. Could not find the branch information.');
             }
             const branchName = payload.ref.replace('refs/heads/', '');
-            yield mergeBranch(octokit, targetBranch, branchName, commitMessage);
+            core.info(`Base branch: ${branchName}`);
+            core.info(`Target branch: ${targetBranch}`);
+            core.info(`Attempting to merge ${branchName} into ${targetBranch}`);
+            yield mergeBranch(octokit, targetBranch, branchName, commitMessage, createPullRequest);
             core.info(`Merged branch ${branchName} into ${targetBranch}`);
         }
         catch (error) {
@@ -63,7 +69,7 @@ function run() {
         }
     });
 }
-function mergeBranch(octokit, baseBranch, branchName, commitMessage) {
+function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullRequest) {
     return __awaiter(this, void 0, void 0, function* () {
         const owner = github.context.repo.owner;
         const repo = github.context.repo.repo;
@@ -79,7 +85,7 @@ function mergeBranch(octokit, baseBranch, branchName, commitMessage) {
         }
         catch (error) {
             // If a 409 conflict error occurs, create a pull request instead
-            if (error.status === 409) {
+            if (error.status === 409 && createPullRequest) {
                 const pullRequest = yield octokit.rest.pulls.create({
                     owner,
                     repo,
