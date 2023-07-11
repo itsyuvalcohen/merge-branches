@@ -23,6 +23,6 @@ jobs:
         with:
           target_branch: develop
           message: Merge main to develop
-          github_token: ${{ secrets.TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           create_pull_request: true
 
