@@ -2,11 +2,8 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {GitHub} from '@actions/github/lib/utils'
 import {WebhookPayload} from '@actions/github/lib/interfaces'
-import {RequestError} from '@octokit/types'
 
 async function run(): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   try {
     const targetBranch: string = core.getInput('target_branch', {
       required: true
@@ -26,7 +23,7 @@ async function run(): Promise<void> {
     await mergeBranch(octokit, targetBranch, branchName, commitMessage)
 
     core.info(`Merged branch ${branchName} into ${targetBranch}`)
-  } catch (error: RequestError) {
+  } catch (error: any) {
     core.setFailed(error.message)
   }
 }
@@ -40,10 +37,6 @@ async function mergeBranch(
   const owner: string = github.context.repo.owner
   const repo: string = github.context.repo.repo
 
-  core.info(`${owner}, ${repo}`)
-
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   try {
     // Attempt to perform the merge operation
     await octokit.rest.repos.merge({
@@ -53,7 +46,7 @@ async function mergeBranch(
       head: branchName,
       commit_message: commitMessage
     })
-  } catch (error: RequestError) {
+  } catch (error: any) {
     // If a 409 conflict error occurs, create a pull request instead
     if (error.status === 409) {
       const pullRequest = await octokit.rest.pulls.create({
