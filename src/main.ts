@@ -8,7 +8,9 @@ async function run(): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   try {
-    const targetBranch: string = core.getInput('target_branch', {required: true})
+    const targetBranch: string = core.getInput('target_branch', {
+      required: true
+    })
     const commitMessage: string = core.getInput('message', {required: true})
     const githubToken: string = core.getInput('github_token', {required: true})
 
@@ -37,6 +39,8 @@ async function mergeBranch(
 ): Promise<void> {
   const owner: string = github.context.repo.owner
   const repo: string = github.context.repo.repo
+
+  core.info(`${owner}, ${repo}`)
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
