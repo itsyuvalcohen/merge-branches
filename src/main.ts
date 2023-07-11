@@ -10,6 +10,12 @@ async function run(): Promise<void> {
     })
     const commitMessage: string = core.getInput('message', {required: true})
     const githubToken: string = core.getInput('github_token', {required: true})
+    const createPullRequest: boolean = core.getBooleanInput(
+      'create_pull_request',
+      {
+        required: true
+      }
+    )
 
     const octokit: InstanceType<typeof GitHub> = github.getOctokit(githubToken)
 
@@ -20,7 +26,17 @@ async function run(): Promise<void> {
 
     const branchName = payload.ref.replace('refs/heads/', '')
 
-    await mergeBranch(octokit, targetBranch, branchName, commitMessage)
+    core.info(`Base branch: ${branchName}`)
+    core.info(`Target branch: ${targetBranch}`)
+    core.info(`Attempting to merge ${branchName} into ${targetBranch}`)
+
+    await mergeBranch(
+      octokit,
+      targetBranch,
+      branchName,
+      commitMessage,
+      createPullRequest
+    )
 
     core.info(`Merged branch ${branchName} into ${targetBranch}`)
   } catch (error: any) {
@@ -32,7 +48,8 @@ async function mergeBranch(
   octokit: InstanceType<typeof GitHub>,
   baseBranch: string,
   branchName: string,
-  commitMessage: string
+  commitMessage: string,
+  createPullRequest: boolean
 ): Promise<void> {
   const owner: string = github.context.repo.owner
   const repo: string = github.context.repo.repo
@@ -48,7 +65,7 @@ async function mergeBranch(
     })
   } catch (error: any) {
     // If a 409 conflict error occurs, create a pull request instead
-    if (error.status === 409) {
+    if (error.status === 409 && createPullRequest) {
       const pullRequest = await octokit.rest.pulls.create({
         owner,
         repo,
