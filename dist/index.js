@@ -65,7 +65,6 @@ function run() {
             core.info(`Target branch: ${targetBranch}`);
             core.info(`Attempting to merge ${branchName} into ${targetBranch}`);
             yield mergeBranch(octokit, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer);
-            core.info(`Merged branch ${branchName} into ${targetBranch}`);
         }
         catch (error) {
             core.setFailed(error.message);
@@ -85,6 +84,7 @@ function mergeBranch(octokit, baseBranch, branchName, commitMessage, createPullR
                 head: branchName,
                 commit_message: commitMessage
             });
+            core.info(`Merged branch ${branchName} into ${baseBranch}`);
         }
         catch (error) {
             // If a 409 conflict error occurs, create a pull request instead
