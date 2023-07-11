@@ -23,4 +23,4 @@ jobs:
         with:
           target_branch: develop
           message: test
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.TOKEN }}
