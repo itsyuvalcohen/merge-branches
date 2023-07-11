@@ -21,4 +21,6 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./
         with:
-          milliseconds: 1000
+          target_branch: develop
+          message: test
+          github_token: ${{ secrets.GITHUB_TOKEN }}
