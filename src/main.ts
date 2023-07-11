@@ -71,22 +71,30 @@ async function mergeBranch(
     // If a 409 conflict error occurs, create a pull request instead
     if (error.status === 409 && createPullRequest) {
       core.info('Automatic merge conflict, creating a pull request.')
-      const pullRequest = await octokit.rest.pulls.create({
-        owner,
-        repo,
-        title: `Merge ${branchName} into ${baseBranch}`,
-        head: branchName,
-        base: baseBranch,
-        body: 'Automatic merge conflict, please resolve manually.'
-      })
-      core.info(`Pull request created: ${pullRequest.data.html_url}`)
-      if (addPRReviewer) {
-        octokit.rest.pulls.requestReviewers({
+      try {
+        const pullRequest = await octokit.rest.pulls.create({
           owner,
           repo,
-          pull_number: pullRequest.data.number,
-          reviewers: [github.context.actor]
+          title: `Merge ${branchName} into ${baseBranch}`,
+          head: branchName,
+          base: baseBranch,
+          body: 'Automatic merge conflict, please resolve manually.'
         })
+        core.info(`Pull request created: ${pullRequest.data.html_url}`)
+        if (addPRReviewer) {
+          octokit.rest.pulls.requestReviewers({
+            owner,
+            repo,
+            pull_number: pullRequest.data.number,
+            reviewers: [github.context.actor]
+          })
+        }
+      } catch (err: any) {
+        if (err.message.includes('already exists')) {
+          core.info('A pull request already exists')
+        } else {
+          throw err
+        }
       }
     } else {
       throw error
