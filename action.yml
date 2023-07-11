@@ -1,4 +1,4 @@
-name: 'merge-branches'
+name: 'Auto Merge Branches'
 description: 'Automatically merge branches'
 author: 'Yuval Cohen'
 inputs:
