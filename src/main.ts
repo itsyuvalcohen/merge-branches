@@ -41,8 +41,6 @@ async function run(): Promise<void> {
       createPullRequest,
       addPRReviewer
     )
-
-    core.info(`Merged branch ${branchName} into ${targetBranch}`)
   } catch (error: any) {
     core.setFailed(error.message)
   }
@@ -68,6 +66,7 @@ async function mergeBranch(
       head: branchName,
       commit_message: commitMessage
     })
+    core.info(`Merged branch ${branchName} into ${baseBranch}`)
   } catch (error: any) {
     // If a 409 conflict error occurs, create a pull request instead
     if (error.status === 409 && createPullRequest) {
