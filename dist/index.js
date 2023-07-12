@@ -46,7 +46,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const targetBranch = core.getInput('target_branch');
-            const targetBranchPattern = new RegExp(core.getInput('target_branch_pattern'));
+            const targetBranchPattern = core.getInput('target_branch_pattern');
             const commitMessage = core.getInput('message', { required: true });
             const githubToken = core.getInput('github_token', { required: true });
             const createPullRequest = core.getBooleanInput('create_pull_request', {
@@ -65,7 +65,7 @@ function run() {
                 target =
                     targetBranch && !targetBranchPattern
                         ? targetBranch
-                        : targetBranchPattern;
+                        : new RegExp(targetBranchPattern);
             }
             const octokit = github.getOctokit(githubToken);
             const owner = github.context.repo.owner;
