@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {GitHub} from '@actions/github/lib/utils'
 import {WebhookPayload} from '@actions/github/lib/interfaces'
+import * as lodash from 'lodash'
 
 async function run(): Promise<void> {
   try {
@@ -30,17 +31,30 @@ async function run(): Promise<void> {
     const branchName = payload.ref.replace('refs/heads/', '')
 
     core.info(`Base branch: ${branchName}`)
-    core.info(`Target branch: ${targetBranch}`)
-    core.info(`Attempting to merge ${branchName} into ${targetBranch}`)
-
-    await mergeBranch(
-      octokit,
-      targetBranch,
-      branchName,
-      commitMessage,
-      createPullRequest,
-      addPRReviewer
-    )
+    if (lodash.isRegExp(targetBranch)) {
+      core.info(`Target branch regex pattern: ${targetBranch}`)
+      const branches = await getBranches(octokit, targetBranch)
+      for (const branch of branches) {
+        await mergeBranch(
+          octokit,
+          branch,
+          branchName,
+          commitMessage,
+          createPullRequest,
+          addPRReviewer
+        )
+      }
+    } else {
+      core.info(`Target branch: ${targetBranch}`)
+      await mergeBranch(
+        octokit,
+        targetBranch,
+        branchName,
+        commitMessage,
+        createPullRequest,
+        addPRReviewer
+      )
+    }
   } catch (error: any) {
     core.setFailed(error.message)
   }
@@ -48,7 +62,7 @@ async function run(): Promise<void> {
 
 async function mergeBranch(
   octokit: InstanceType<typeof GitHub>,
-  baseBranch: string,
+  targetBranch: string,
   branchName: string,
   commitMessage: string,
   createPullRequest: boolean,
@@ -58,15 +72,16 @@ async function mergeBranch(
   const repo: string = github.context.repo.repo
 
   try {
+    core.info(`Attempting to merge ${branchName} into ${targetBranch}`)
     // Attempt to perform the merge operation
     await octokit.rest.repos.merge({
       owner,
       repo,
-      base: baseBranch,
+      base: targetBranch,
       head: branchName,
       commit_message: commitMessage
     })
-    core.info(`Merged branch ${branchName} into ${baseBranch}`)
+    core.info(`Merged branch ${branchName} into ${targetBranch}`)
   } catch (error: any) {
     // If a 409 conflict error occurs, create a pull request instead
     if (error.status === 409 && createPullRequest) {
@@ -75,9 +90,9 @@ async function mergeBranch(
         const pullRequest = await octokit.rest.pulls.create({
           owner,
           repo,
-          title: `Merge ${branchName} into ${baseBranch}`,
+          title: `Merge ${branchName} into ${targetBranch}`,
           head: branchName,
-          base: baseBranch,
+          base: targetBranch,
           body: 'Automatic merge conflict, please resolve manually.'
         })
         core.info(`Pull request created: ${pullRequest.data.html_url}`)
@@ -100,6 +115,49 @@ async function mergeBranch(
       throw error
     }
   }
+}
+
+async function getBranches(
+  octokit: InstanceType<typeof GitHub>,
+  targetBranch: string
+): Promise<string[]> {
+  const owner: string = github.context.repo.owner
+  const repo: string = github.context.repo.repo
+  const pageSize = 100
+  let branches: string[] = []
+
+  let hasNextPage = true
+  let cursor = null
+
+  while (hasNextPage) {
+    const queryBranches = `{
+      repository(owner: "${owner}", name: "${repo}") {
+        refs(refPrefix: "refs/heads/", first: ${pageSize}, after: ${cursor}) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          edges {
+            node {
+              name
+            }
+          }
+        }
+      }
+    }`
+
+    const resultBranches: any = await octokit.graphql(queryBranches)
+    const pageInfo = resultBranches.repository.refs.pageInfo
+    const pageBranches = resultBranches.repository.refs.edges.map(
+      (edge: any) => edge.node.name
+    )
+    branches = branches.concat(pageBranches)
+
+    hasNextPage = pageInfo.hasNextPage
+    cursor = `"${pageInfo.endCursor}"`
+  }
+
+  return branches.filter(branch => new RegExp(targetBranch).test(branch))
 }
 
 run()
