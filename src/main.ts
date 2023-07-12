@@ -27,7 +27,7 @@ async function run(): Promise<void> {
     const repo: string = github.context.repo.repo
 
     const payload: WebhookPayload = github.context.payload
-    if (!payload || !payload.ref || lodash.isUndefined(payload.ref)) {
+    if (!payload || !payload.ref) {
       throw new Error('Invalid payload. Could not find the branch information.')
     }
 
