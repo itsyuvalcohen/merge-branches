@@ -28,7 +28,7 @@ async function run(): Promise<void> {
 
     const payload: WebhookPayload = github.context.payload
     if (!payload || !payload.ref || lodash.isUndefined(payload.ref)) {
-      new Error('Invalid payload. Could not find the branch information.')
+      throw new Error('Invalid payload. Could not find the branch information.')
     }
 
     const branchName = payload.ref.replace('refs/heads/', '')
