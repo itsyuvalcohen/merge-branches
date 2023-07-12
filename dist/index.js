@@ -55,6 +55,8 @@ function run() {
             const addPRReviewer = core.getBooleanInput('add_pr_reviewer', {
                 required: true
             });
+            core.info(`targetBranch: ${targetBranch}`);
+            core.info(`targetBranchPattern: ${targetBranchPattern}`);
             let target = null;
             if (!targetBranch && !targetBranchPattern) {
                 throw new Error('No target branch');
@@ -120,7 +122,7 @@ function mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessa
                     });
                     core.info(`Pull request created: ${pullRequest.data.html_url}`);
                     if (addPRReviewer) {
-                        octokit.rest.pulls.requestReviewers({
+                        yield octokit.rest.pulls.requestReviewers({
                             owner,
                             repo,
                             pull_number: pullRequest.data.number,
@@ -150,27 +152,24 @@ function getBranches(octokit, owner, repo, targetPattern) {
         let hasNextPage = true;
         let cursor = null;
         while (hasNextPage) {
-            const queryBranches = `{
-      repository(owner: "${owner}", name: "${repo}") {
-        refs(refPrefix: "refs/heads/", first: ${pageSize}, after: ${cursor}) {
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
-          edges {
-            node {
-              name
-            }
-          }
-        }
-      }
-    }`;
-            const resultBranches = yield octokit.graphql(queryBranches);
-            const pageInfo = resultBranches.repository.refs.pageInfo;
-            const pageBranches = resultBranches.repository.refs.edges.map((edge) => edge.node.name);
+            const resultBranches = yield octokit.rest.repos.listBranches({
+                owner,
+                repo,
+                per_page: pageSize,
+                page: cursor ? cursor + 1 : 1
+            });
+            const pageBranches = resultBranches.data.map((branch) => branch.name);
             branches = branches.concat(pageBranches);
-            hasNextPage = pageInfo.hasNextPage;
-            cursor = `"${pageInfo.endCursor}"`;
+            hasNextPage = resultBranches.headers.link
+                ? resultBranches.headers.link.includes('rel="next"')
+                : false;
+            if (hasNextPage) {
+                const lastPageURL = resultBranches.headers.link.match(/<([^>]+)>;\s*rel="last"/);
+                if (lastPageURL) {
+                    const lastPageNumber = lastPageURL[1].match(/page=(\d+)/);
+                    cursor = lastPageNumber ? parseInt(lastPageNumber[1]) : null;
+                }
+            }
         }
         return branches.filter(branch => targetPattern.test(branch));
     });
