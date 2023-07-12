@@ -57,22 +57,24 @@ function run() {
                 required: true
             });
             const octokit = github.getOctokit(githubToken);
+            const owner = github.context.repo.owner;
+            const repo = github.context.repo.repo;
             const payload = github.context.payload;
-            if (!payload || !payload.ref) {
+            if (!payload || !payload.ref || lodash.isUndefined(payload.ref)) {
                 new Error('Invalid payload. Could not find the branch information.');
             }
             const branchName = payload.ref.replace('refs/heads/', '');
             core.info(`Base branch: ${branchName}`);
             if (lodash.isRegExp(targetBranch)) {
                 core.info(`Target branch regex pattern: ${targetBranch}`);
-                const branches = yield getBranches(octokit, targetBranch);
+                const branches = yield getBranches(octokit, owner, repo, targetBranch);
                 for (const branch of branches) {
-                    yield mergeBranch(octokit, branch, branchName, commitMessage, createPullRequest, addPRReviewer);
+                    yield mergeBranch(octokit, owner, repo, branch, branchName, commitMessage, createPullRequest, addPRReviewer);
                 }
             }
             else {
                 core.info(`Target branch: ${targetBranch}`);
-                yield mergeBranch(octokit, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer);
+                yield mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer);
             }
         }
         catch (error) {
@@ -80,10 +82,8 @@ function run() {
         }
     });
 }
-function mergeBranch(octokit, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer) {
+function mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer) {
     return __awaiter(this, void 0, void 0, function* () {
-        const owner = github.context.repo.owner;
-        const repo = github.context.repo.repo;
         try {
             core.info(`Attempting to merge ${branchName} into ${targetBranch}`);
             // Attempt to perform the merge operation
@@ -134,10 +134,8 @@ function mergeBranch(octokit, targetBranch, branchName, commitMessage, createPul
         }
     });
 }
-function getBranches(octokit, targetBranch) {
+function getBranches(octokit, owner, repo, targetBranch) {
     return __awaiter(this, void 0, void 0, function* () {
-        const owner = github.context.repo.owner;
-        const repo = github.context.repo.repo;
         const pageSize = 100;
         let branches = [];
         let hasNextPage = true;

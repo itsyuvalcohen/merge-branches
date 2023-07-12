@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {GitHub} from '@actions/github/lib/utils'
-import {WebhookPayload} from '@actions/github/lib/interfaces'
 import * as lodash from 'lodash'
+import {WebhookPayload} from '@actions/github/lib/interfaces'
 
 async function run(): Promise<void> {
   try {
@@ -23,8 +23,11 @@ async function run(): Promise<void> {
 
     const octokit: InstanceType<typeof GitHub> = github.getOctokit(githubToken)
 
+    const owner: string = github.context.repo.owner
+    const repo: string = github.context.repo.repo
+
     const payload: WebhookPayload = github.context.payload
-    if (!payload || !payload.ref) {
+    if (!payload || !payload.ref || lodash.isUndefined(payload.ref)) {
       new Error('Invalid payload. Could not find the branch information.')
     }
 
@@ -33,10 +36,12 @@ async function run(): Promise<void> {
     core.info(`Base branch: ${branchName}`)
     if (lodash.isRegExp(targetBranch)) {
       core.info(`Target branch regex pattern: ${targetBranch}`)
-      const branches = await getBranches(octokit, targetBranch)
+      const branches = await getBranches(octokit, owner, repo, targetBranch)
       for (const branch of branches) {
         await mergeBranch(
           octokit,
+          owner,
+          repo,
           branch,
           branchName,
           commitMessage,
@@ -48,6 +53,8 @@ async function run(): Promise<void> {
       core.info(`Target branch: ${targetBranch}`)
       await mergeBranch(
         octokit,
+        owner,
+        repo,
         targetBranch,
         branchName,
         commitMessage,
@@ -62,15 +69,14 @@ async function run(): Promise<void> {
 
 async function mergeBranch(
   octokit: InstanceType<typeof GitHub>,
+  owner: string,
+  repo: string,
   targetBranch: string,
   branchName: string,
   commitMessage: string,
   createPullRequest: boolean,
   addPRReviewer: boolean
 ): Promise<void> {
-  const owner: string = github.context.repo.owner
-  const repo: string = github.context.repo.repo
-
   try {
     core.info(`Attempting to merge ${branchName} into ${targetBranch}`)
     // Attempt to perform the merge operation
@@ -119,10 +125,10 @@ async function mergeBranch(
 
 async function getBranches(
   octokit: InstanceType<typeof GitHub>,
+  owner: string,
+  repo: string,
   targetBranch: string
 ): Promise<string[]> {
-  const owner: string = github.context.repo.owner
-  const repo: string = github.context.repo.repo
   const pageSize = 100
   let branches: string[] = []
 
