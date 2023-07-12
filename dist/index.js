@@ -79,8 +79,13 @@ function run() {
             if (lodash.isRegExp(target)) {
                 core.info(`Target branch regex pattern: ${target}`);
                 const branches = yield getBranches(octokit, owner, repo, target);
-                for (const branch of branches) {
-                    yield mergeBranch(octokit, owner, repo, branch, branchName, commitMessage, createPullRequest, addPRReviewer);
+                if (lodash.isEmpty(branches)) {
+                    core.info('No matching branches');
+                }
+                else {
+                    for (const branch of branches) {
+                        yield mergeBranch(octokit, owner, repo, branch, branchName, commitMessage, createPullRequest, addPRReviewer);
+                    }
                 }
             }
             else {
