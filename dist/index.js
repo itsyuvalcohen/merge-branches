@@ -45,9 +45,8 @@ const lodash = __importStar(__nccwpck_require__(250));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const targetBranch = core.getInput('target_branch', {
-                required: true
-            });
+            const targetBranch = core.getInput('target_branch');
+            const targetBranchPattern = new RegExp(core.getInput('target_branch_pattern'));
             const commitMessage = core.getInput('message', { required: true });
             const githubToken = core.getInput('github_token', { required: true });
             const createPullRequest = core.getBooleanInput('create_pull_request', {
@@ -56,6 +55,16 @@ function run() {
             const addPRReviewer = core.getBooleanInput('add_pr_reviewer', {
                 required: true
             });
+            let target = null;
+            if (!targetBranch && !targetBranchPattern) {
+                throw new Error('No target branch');
+            }
+            else {
+                target =
+                    targetBranch && !targetBranchPattern
+                        ? targetBranch
+                        : targetBranchPattern;
+            }
             const octokit = github.getOctokit(githubToken);
             const owner = github.context.repo.owner;
             const repo = github.context.repo.repo;
@@ -65,16 +74,16 @@ function run() {
             }
             const branchName = payload.ref.replace('refs/heads/', '');
             core.info(`Base branch: ${branchName}`);
-            if (lodash.isRegExp(targetBranch)) {
-                core.info(`Target branch regex pattern: ${targetBranch}`);
-                const branches = yield getBranches(octokit, owner, repo, targetBranch);
+            if (lodash.isRegExp(target)) {
+                core.info(`Target branch regex pattern: ${target}`);
+                const branches = yield getBranches(octokit, owner, repo, target);
                 for (const branch of branches) {
                     yield mergeBranch(octokit, owner, repo, branch, branchName, commitMessage, createPullRequest, addPRReviewer);
                 }
             }
             else {
-                core.info(`Target branch: ${targetBranch}`);
-                yield mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer);
+                core.info(`Target branch: ${target}`);
+                yield mergeBranch(octokit, owner, repo, target, branchName, commitMessage, createPullRequest, addPRReviewer);
             }
         }
         catch (error) {
@@ -134,7 +143,7 @@ function mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessa
         }
     });
 }
-function getBranches(octokit, owner, repo, targetBranch) {
+function getBranches(octokit, owner, repo, targetPattern) {
     return __awaiter(this, void 0, void 0, function* () {
         const pageSize = 100;
         let branches = [];
@@ -163,7 +172,7 @@ function getBranches(octokit, owner, repo, targetBranch) {
             hasNextPage = pageInfo.hasNextPage;
             cursor = `"${pageInfo.endCursor}"`;
         }
-        return branches.filter(branch => new RegExp(targetBranch).test(branch));
+        return branches.filter(branch => targetPattern.test(branch));
     });
 }
 run();

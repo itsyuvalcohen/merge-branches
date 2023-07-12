@@ -6,9 +6,10 @@ import {WebhookPayload} from '@actions/github/lib/interfaces'
 
 async function run(): Promise<void> {
   try {
-    const targetBranch: string = core.getInput('target_branch', {
-      required: true
-    })
+    const targetBranch: string = core.getInput('target_branch')
+    const targetBranchPattern = new RegExp(
+      core.getInput('target_branch_pattern')
+    )
     const commitMessage: string = core.getInput('message', {required: true})
     const githubToken: string = core.getInput('github_token', {required: true})
     const createPullRequest: boolean = core.getBooleanInput(
@@ -20,6 +21,16 @@ async function run(): Promise<void> {
     const addPRReviewer: boolean = core.getBooleanInput('add_pr_reviewer', {
       required: true
     })
+
+    let target = null
+    if (!targetBranch && !targetBranchPattern) {
+      throw new Error('No target branch')
+    } else {
+      target =
+        targetBranch && !targetBranchPattern
+          ? targetBranch
+          : targetBranchPattern
+    }
 
     const octokit: InstanceType<typeof GitHub> = github.getOctokit(githubToken)
 
@@ -34,9 +45,9 @@ async function run(): Promise<void> {
     const branchName = payload.ref.replace('refs/heads/', '')
 
     core.info(`Base branch: ${branchName}`)
-    if (lodash.isRegExp(targetBranch)) {
-      core.info(`Target branch regex pattern: ${targetBranch}`)
-      const branches = await getBranches(octokit, owner, repo, targetBranch)
+    if (lodash.isRegExp(target)) {
+      core.info(`Target branch regex pattern: ${target}`)
+      const branches = await getBranches(octokit, owner, repo, target)
       for (const branch of branches) {
         await mergeBranch(
           octokit,
@@ -50,12 +61,12 @@ async function run(): Promise<void> {
         )
       }
     } else {
-      core.info(`Target branch: ${targetBranch}`)
+      core.info(`Target branch: ${target}`)
       await mergeBranch(
         octokit,
         owner,
         repo,
-        targetBranch,
+        target,
         branchName,
         commitMessage,
         createPullRequest,
@@ -127,7 +138,7 @@ async function getBranches(
   octokit: InstanceType<typeof GitHub>,
   owner: string,
   repo: string,
-  targetBranch: string
+  targetPattern: RegExp
 ): Promise<string[]> {
   const pageSize = 100
   let branches: string[] = []
@@ -163,7 +174,7 @@ async function getBranches(
     cursor = `"${pageInfo.endCursor}"`
   }
 
-  return branches.filter(branch => new RegExp(targetBranch).test(branch))
+  return branches.filter(branch => targetPattern.test(branch))
 }
 
 run()

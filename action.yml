@@ -3,8 +3,9 @@ description: 'Automatically merge branches'
 author: 'Yuval Cohen'
 inputs:
   target_branch:
-    required: true
     description: 'The target branch'
+  target_branch_pattern:
+    description: 'The target branch regex pattern'
   message:
     required: true
     description: 'The merge commit message'
