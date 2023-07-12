@@ -51,17 +51,21 @@ async function run(): Promise<void> {
     if (lodash.isRegExp(target)) {
       core.info(`Target branch regex pattern: ${target}`)
       const branches = await getBranches(octokit, owner, repo, target)
-      for (const branch of branches) {
-        await mergeBranch(
-          octokit,
-          owner,
-          repo,
-          branch,
-          branchName,
-          commitMessage,
-          createPullRequest,
-          addPRReviewer
-        )
+      if (lodash.isEmpty(branches)) {
+        core.info('No matching branches')
+      } else {
+        for (const branch of branches) {
+          await mergeBranch(
+            octokit,
+            owner,
+            repo,
+            branch,
+            branchName,
+            commitMessage,
+            createPullRequest,
+            addPRReviewer
+          )
+        }
       }
     } else {
       core.info(`Target branch: ${target}`)

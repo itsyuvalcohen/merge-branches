@@ -27,7 +27,7 @@ jobs:
 #          add_pr_reviewer: false
       - uses: ./
         with:
-          target_branch_pattern: /release/.*/
+          target_branch_pattern: release/.*
           message: Merge main to release branches
           github_token: ${{ secrets.TOKEN }}
           create_pull_request: true
