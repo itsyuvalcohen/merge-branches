@@ -55,8 +55,6 @@ function run() {
             const addPRReviewer = core.getBooleanInput('add_pr_reviewer', {
                 required: true
             });
-            core.info(`targetBranch: ${targetBranch}`);
-            core.info(`targetBranchPattern: ${targetBranchPattern}`);
             let target = null;
             if (!targetBranch && !targetBranchPattern) {
                 throw new Error('No target branch');

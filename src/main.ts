@@ -20,9 +20,6 @@ async function run(): Promise<void> {
       required: true
     })
 
-    core.info(`targetBranch: ${targetBranch}`)
-    core.info(`targetBranchPattern: ${targetBranchPattern}`)
-
     let target = null
     if (!targetBranch && !targetBranchPattern) {
       throw new Error('No target branch')
