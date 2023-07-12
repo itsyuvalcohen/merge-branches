@@ -1,8 +1,8 @@
-name: 'build-test'
+name: 'build-test-main'
 on: # rebuild any PRs and main branch changes
   push:
     branches:
-      - 'release/*'
+      - main
 
 jobs:
   build: # make sure build/ci work properly
@@ -20,7 +20,14 @@ jobs:
       - uses: ./
         with:
           target_branch: develop
-          message: Merge release to develop
+          message: Merge main to develop
+          github_token: ${{ secrets.TOKEN }}
+          create_pull_request: true
+          add_pr_reviewer: false
+      - uses: ./
+        with:
+          target_branch_pattern: release/.*
+          message: Merge main to release branches
           github_token: ${{ secrets.TOKEN }}
           create_pull_request: true
           add_pr_reviewer: false
