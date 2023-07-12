@@ -7,9 +7,7 @@ import {WebhookPayload} from '@actions/github/lib/interfaces'
 async function run(): Promise<void> {
   try {
     const targetBranch: string = core.getInput('target_branch')
-    const targetBranchPattern = new RegExp(
-      core.getInput('target_branch_pattern')
-    )
+    const targetBranchPattern = core.getInput('target_branch_pattern')
     const commitMessage: string = core.getInput('message', {required: true})
     const githubToken: string = core.getInput('github_token', {required: true})
     const createPullRequest: boolean = core.getBooleanInput(
@@ -32,7 +30,7 @@ async function run(): Promise<void> {
       target =
         targetBranch && !targetBranchPattern
           ? targetBranch
-          : targetBranchPattern
+          : new RegExp(targetBranchPattern)
     }
 
     const octokit: InstanceType<typeof GitHub> = github.getOctokit(githubToken)
