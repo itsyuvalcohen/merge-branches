@@ -155,24 +155,25 @@ function getBranches(octokit, owner, repo, targetPattern) {
         let hasNextPage = true;
         let cursor = null;
         while (hasNextPage) {
-            const resultBranches = yield octokit.rest.repos.listBranches({
-                owner,
-                repo,
-                per_page: pageSize,
-                page: cursor ? cursor + 1 : 1
-            });
-            const pageBranches = resultBranches.data.map((branch) => branch.name);
+            const queryBranches = `{
+      repository(owner: "${owner}", name: "${repo}") {
+        refs(refPrefix: "refs/heads/", first: ${pageSize}, after: ${cursor}) {
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          nodes {
+            name
+          }
+        }
+      }
+    }`;
+            const resultBranches = yield octokit.graphql(queryBranches);
+            const pageInfo = resultBranches.repository.refs.pageInfo;
+            const pageBranches = resultBranches.repository.refs.nodes.map((node) => node.name);
             branches = branches.concat(pageBranches);
-            hasNextPage = resultBranches.headers.link
-                ? resultBranches.headers.link.includes('rel="next"')
-                : false;
-            if (hasNextPage) {
-                const lastPageURL = resultBranches.headers.link.match(/<([^>]+)>;\s*rel="last"/);
-                if (lastPageURL) {
-                    const lastPageNumber = lastPageURL[1].match(/page=(\d+)/);
-                    cursor = lastPageNumber ? parseInt(lastPageNumber[1]) : null;
-                }
-            }
+            hasNextPage = pageInfo.hasNextPage;
+            cursor = `"${pageInfo.endCursor}"`;
         }
         return branches.filter(branch => targetPattern.test(branch));
     });
