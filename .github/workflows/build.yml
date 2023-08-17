@@ -1,9 +1,17 @@
-name: 'build-test'
-on: # rebuild any PRs and main branch changes
+name: 'build'
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
 
 jobs:
-  build: # make sure build/ci work properly
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

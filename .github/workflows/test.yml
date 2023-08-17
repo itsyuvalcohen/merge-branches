@@ -1,19 +1,11 @@
-name: 'build-test'
-on: # rebuild any PRs and main branch changes
+name: 'test'
+on:
   push:
     branches:
       - 'release/*'
 
 jobs:
-  build: # make sure build/ci work properly
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: |
-          npm install
-      - run: |
-          npm run all
-  test: # make sure the action works on a clean machine without building
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,5 +15,5 @@ jobs:
           message: Merge release to develop
           github_token: ${{ secrets.TOKEN }}
           create_pull_request: true
-          add_pr_reviewer: false
+          add_assignee: false
 
