@@ -16,7 +16,7 @@ async function run(): Promise<void> {
         required: true
       }
     )
-    const addPRReviewer: boolean = core.getBooleanInput('add_pr_reviewer', {
+    const addAssignee: boolean = core.getBooleanInput('add_assignee', {
       required: true
     })
 
@@ -58,7 +58,7 @@ async function run(): Promise<void> {
             branchName,
             commitMessage,
             createPullRequest,
-            addPRReviewer
+            addAssignee
           )
         }
       }
@@ -72,7 +72,7 @@ async function run(): Promise<void> {
         branchName,
         commitMessage,
         createPullRequest,
-        addPRReviewer
+        addAssignee
       )
     }
   } catch (error: any) {
@@ -88,7 +88,7 @@ async function mergeBranch(
   branchName: string,
   commitMessage: string,
   createPullRequest: boolean,
-  addPRReviewer: boolean
+  addAssignee: boolean
 ): Promise<void> {
   try {
     core.info(`Attempting to merge ${branchName} into ${targetBranch}`)
@@ -115,12 +115,12 @@ async function mergeBranch(
           body: 'Automatic merge conflict, please resolve manually.'
         })
         core.info(`Pull request created: ${pullRequest.data.html_url}`)
-        if (addPRReviewer) {
-          await octokit.rest.pulls.requestReviewers({
+        if (addAssignee) {
+          await octokit.rest.issues.addAssignees({
             owner,
             repo,
-            pull_number: pullRequest.data.number,
-            reviewers: [github.context.actor]
+            issue_number: pullRequest.data.number,
+            assignees: [github.context.actor]
           })
         }
       } catch (err: any) {

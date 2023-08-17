@@ -52,7 +52,7 @@ function run() {
             const createPullRequest = core.getBooleanInput('create_pull_request', {
                 required: true
             });
-            const addPRReviewer = core.getBooleanInput('add_pr_reviewer', {
+            const addAssignee = core.getBooleanInput('add_assignee', {
                 required: true
             });
             let target = null;
@@ -82,13 +82,13 @@ function run() {
                 }
                 else {
                     for (const branch of branches) {
-                        yield mergeBranch(octokit, owner, repo, branch, branchName, commitMessage, createPullRequest, addPRReviewer);
+                        yield mergeBranch(octokit, owner, repo, branch, branchName, commitMessage, createPullRequest, addAssignee);
                     }
                 }
             }
             else {
                 core.info(`Target branch: ${target}`);
-                yield mergeBranch(octokit, owner, repo, target, branchName, commitMessage, createPullRequest, addPRReviewer);
+                yield mergeBranch(octokit, owner, repo, target, branchName, commitMessage, createPullRequest, addAssignee);
             }
         }
         catch (error) {
@@ -96,7 +96,7 @@ function run() {
         }
     });
 }
-function mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessage, createPullRequest, addPRReviewer) {
+function mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessage, createPullRequest, addAssignee) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.info(`Attempting to merge ${branchName} into ${targetBranch}`);
@@ -124,12 +124,12 @@ function mergeBranch(octokit, owner, repo, targetBranch, branchName, commitMessa
                         body: 'Automatic merge conflict, please resolve manually.'
                     });
                     core.info(`Pull request created: ${pullRequest.data.html_url}`);
-                    if (addPRReviewer) {
-                        yield octokit.rest.pulls.requestReviewers({
+                    if (addAssignee) {
+                        yield octokit.rest.issues.addAssignees({
                             owner,
                             repo,
-                            pull_number: pullRequest.data.number,
-                            reviewers: [github.context.actor]
+                            issue_number: pullRequest.data.number,
+                            assignees: [github.context.actor]
                         });
                     }
                 }
